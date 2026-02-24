@@ -1,0 +1,88 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  background: #f4f6f9;
+  color: #1a1a1a;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 22px;
+  color: #2b4eff;
+}
+
+.builder {
+  font-size: 14px;
+  color: #666;
+}
+
+.hero {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.hero h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.search-box {
+  margin-top: 20px;
+}
+
+input {
+  padding: 12px;
+  width: 280px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 12px 16px;
+  margin-left: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #2b4eff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d36b5;
+}
+
+.card {
+  background: white;
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 12px;
+  max-width: 800px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+}
+
+.flashcard {
+  background: #f9fbff;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-left: 4px solid #2b4eff;
+  border-radius: 6px;
+}
+
+.hidden {
+  display: none;
+}
+
+.footer-info {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 14px;
+  color: #777;
+} 
