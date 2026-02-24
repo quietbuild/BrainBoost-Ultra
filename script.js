@@ -8,58 +8,38 @@ async function searchTopic(topicOverride = null) {
   document.getElementById("results").classList.remove("hidden");
 
   try {
-    const response = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(topic)}`
+    // 1️⃣ Get summary
+    const summaryRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`
     );
-    const data = await response.json();
+    const summaryData = await summaryRes.json();
 
-    if (!data.lead) {
+    if (!summaryData.extract) {
       alert("Topic not found.");
       return;
     }
 
-    // Overview
-    let introText = "";
-    data.lead.sections.forEach(section => {
-      introText += section.text + " ";
-    });
+    document.getElementById("overview").innerText = summaryData.extract;
 
-    introText = introText
-      .replace(/<[^>]+>/g, "")
-      .replace(/\[[^\]]*\]/g, "")
-      .trim();
+    // 2️⃣ Get related links (simpler method)
+    const relatedRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/related/${encodeURIComponent(topic)}`
+    );
+    const relatedData = await relatedRes.json();
 
-    document.getElementById("overview").innerText =
-      introText.split(". ").slice(0,4).join(". ") + ".";
-
-    // Sections
-    const sectionsDiv = document.getElementById("sections");
-    sectionsDiv.innerHTML = "";
-    (data.remaining?.sections || []).slice(0,8).forEach(section => {
-      if (section.line) {
-        const btn = document.createElement("button");
-        btn.innerText = section.line;
-        btn.onclick = () => {
-          const content = section.text
-            .replace(/<[^>]+>/g, "")
-            .replace(/\[[^\]]*\]/g, "")
-            .trim();
-          document.getElementById("overview").innerText =
-            content.split(". ").slice(0,5).join(". ") + ".";
-        };
-        sectionsDiv.appendChild(btn);
-      }
-    });
-
-    // Related Topics
     const relatedDiv = document.getElementById("related");
     relatedDiv.innerHTML = "";
-    (data.lead.sections[0].links || []).slice(0,10).forEach(link => {
+
+    (relatedData.pages || []).slice(0, 8).forEach(page => {
       const btn = document.createElement("button");
-      btn.innerText = link.text;
-      btn.onclick = () => searchTopic(link.text);
+      btn.innerText = page.title;
+      btn.onclick = () => searchTopic(page.title);
       relatedDiv.appendChild(btn);
     });
+
+    // 3️⃣ Remove section feature (since it was unstable)
+    const sectionsDiv = document.getElementById("sections");
+    sectionsDiv.innerHTML = "<p>Use related topics to explore deeper.</p>";
 
   } catch (error) {
     alert("Error loading topic.");
