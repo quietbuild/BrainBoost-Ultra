@@ -13,7 +13,6 @@ async function generateContent() {
   document.getElementById("results").classList.remove("hidden");
 
   const cleanText = data.extract.replace(/\[[^\]]*\]/g, "");
-
   generateSummary(cleanText);
   generateKeyPoints(cleanText);
   generateFlashcards(cleanText, topic);
@@ -22,12 +21,16 @@ async function generateContent() {
     `Source: <a href="${data.content_urls.desktop.page}" target="_blank">Wikipedia</a>`;
 }
 
+/* ========================
+   SMART SUMMARY
+======================== */
 function generateSummary(text) {
   const sentences = text.split(". ");
+  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","almost","most","also","only"];
+  
   const wordFreq = {};
-
   text.toLowerCase().split(/\W+/).forEach(word => {
-    if (word.length > 4) {
+    if (word.length > 4 && !stopwords.includes(word)) {
       wordFreq[word] = (wordFreq[word] || 0) + 1;
     }
   });
@@ -41,40 +44,107 @@ function generateSummary(text) {
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const topSentences = scored.slice(0, 3).map(s => s.sentence).join(". ");
+  const best = scored.slice(0, 3).map(s => s.sentence.trim()).join(". ");
 
-  document.getElementById("summary").innerText = topSentences;
+  document.getElementById("summary").innerText = best + ".";
 }
 
+/* ========================
+   SMART KEY CONCEPTS
+======================== */
 function generateKeyPoints(text) {
-  const words = text.match(/\b[A-Z][a-z]+\b/g) || [];
-  const unique = [...new Set(words)].slice(0, 8);
+  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","almost","most","also","only"];
+  
+  const words = text.toLowerCase().match(/\b[a-z]{5,}\b/g) || [];
+  const freq = {};
+
+  words.forEach(word => {
+    if (!stopwords.includes(word)) {
+      freq[word] = (freq[word] || 0) + 1;
+    }
+  });
+
+  const sorted = Object.entries(freq)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0,8)
+    .map(entry => entry[0]);
 
   const list = document.getElementById("keyPoints");
   list.innerHTML = "";
 
-  unique.forEach(word => {
+  sorted.forEach(word => {
     const li = document.createElement("li");
-    li.textContent = word;
+    li.textContent = word.charAt(0).toUpperCase() + word.slice(1);
     list.appendChild(li);
   });
 }
 
-function generateFlashcards(text, topic) {
-  const sentences = text.split(". ").slice(0, 5);
+/* ========================
+   QUIZ MODE FLASHCARDS
+======================== */
+let flashcards = [];
+let currentCard = 0;
 
+function generateFlashcards(text, topic) {
+  const sentences = text.split(". ").slice(0,6);
+
+  flashcards = sentences.map(sentence => {
+    sentence = sentence.trim();
+
+    if (sentence.includes(" is ")) {
+      const subject = sentence.split(" is ")[0];
+      return {
+        question: `What is ${subject}?`,
+        answer: sentence
+      };
+    }
+
+    if (sentence.includes(" was ")) {
+      const subject = sentence.split(" was ")[0];
+      return {
+        question: `What happened to ${subject}?`,
+        answer: sentence
+      };
+    }
+
+    return {
+      question: `Explain this about ${topic}:`,
+      answer: sentence
+    };
+  });
+
+  currentCard = 0;
+  showFlashcard();
+}
+
+function showFlashcard() {
   const container = document.getElementById("flashcards");
   container.innerHTML = "";
 
-  sentences.forEach(sentence => {
-    const card = document.createElement("div");
-    card.className = "flashcard";
+  if (!flashcards.length) return;
 
-    card.innerHTML = `
-      <strong>Q:</strong> What is related to ${topic}?<br>
-      <strong>A:</strong> ${sentence}
-    `;
+  const card = document.createElement("div");
+  card.className = "flashcard";
 
-    container.appendChild(card);
-  });
-} 
+  card.innerHTML = `
+    <p><strong>Question:</strong> ${flashcards[currentCard].question}</p>
+    <button onclick="revealAnswer()">Reveal Answer</button>
+    <div id="answer" style="margin-top:10px; display:none;">
+      <strong>Answer:</strong> ${flashcards[currentCard].answer}
+    </div>
+    <div style="margin-top:15px;">
+      <button onclick="nextCard()">Next</button>
+    </div>
+  `;
+
+  container.appendChild(card);
+}
+
+function revealAnswer() {
+  document.getElementById("answer").style.display = "block";
+}
+
+function nextCard() {
+  currentCard = (currentCard + 1) % flashcards.length;
+  showFlashcard();
+}
