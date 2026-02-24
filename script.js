@@ -1,102 +1,49 @@
-async function generateContent() {
-  const topic = document.getElementById("topicInput").value.trim();
-  if (!topic) {
-    alert("Enter a topic.");
-    return;
-  }
+async function searchWord() {
+  const word = document.getElementById("wordInput").value.trim();
+  if (!word) return alert("Enter a word.");
+
+  document.getElementById("results").classList.remove("hidden");
 
   try {
-    const response = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`
-    );
+    // Dictionary API
+    const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    const dictData = await dictRes.json();
 
-    const data = await response.json();
+    if (Array.isArray(dictData)) {
+      const meaning = dictData[0].meanings[0].definitions[0].definition;
+      const synonyms = dictData[0].meanings[0].synonyms || [];
+      const antonyms = dictData[0].meanings[0].antonyms || [];
 
-    if (!data.extract) {
-      alert("Topic not found.");
-      return;
+      document.getElementById("meaning").innerText = meaning;
+
+      const synList = document.getElementById("synonyms");
+      synList.innerHTML = "";
+      synonyms.slice(0,8).forEach(s => {
+        synList.innerHTML += `<li>${s}</li>`;
+      });
+
+      const antList = document.getElementById("antonyms");
+      antList.innerHTML = "";
+      antonyms.slice(0,8).forEach(a => {
+        antList.innerHTML += `<li>${a}</li>`;
+      });
+    } else {
+      document.getElementById("meaning").innerText = "No dictionary result found.";
     }
 
-    document.getElementById("results").classList.remove("hidden");
+    // Wikipedia Explanation
+    const wikiRes = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(word)}`
+    );
+    const wikiData = await wikiRes.json();
 
-    const cleanText = data.extract.replace(/\[[^\]]*\]/g, "");
-
-    generateSummary(cleanText);
-    generateKeyPoints(cleanText);
-    generateFlashcards(cleanText, data.title);
+    document.getElementById("wiki").innerText = wikiData.extract || "No detailed explanation found.";
 
     document.getElementById("source").innerHTML =
-      `Source: <a href="${data.content_urls.desktop.page}" target="_blank">Wikipedia</a>`;
+      `Sources: DictionaryAPI.dev & <a href="${wikiData.content_urls?.desktop?.page || '#'}" target="_blank">Wikipedia</a>`;
 
   } catch (error) {
-    alert("Error loading topic.");
+    alert("Error fetching data.");
     console.error(error);
   }
-}
-
-/* ========================
-   CLEAN SUMMARY
-======================== */
-function generateSummary(text) {
-  const sentences = text.split(". ").slice(0,4);
-  document.getElementById("summary").innerText = sentences.join(". ") + ".";
-}
-
-/* ========================
-   BETTER KEY CONCEPTS
-======================== */
-function generateKeyPoints(text) {
-  const stopwords = [
-    "the","this","that","with","from","have","were","been","into",
-    "about","which","their","there","almost","most","also","only",
-    "earth","planet"
-  ];
-
-  const words = text.toLowerCase().match(/\b[a-z]{5,}\b/g) || [];
-  const freq = {};
-
-  words.forEach(word => {
-    if (!stopwords.includes(word)) {
-      freq[word] = (freq[word] || 0) + 1;
-    }
-  });
-
-  const sorted = Object.entries(freq)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0,8)
-    .map(entry => entry[0]);
-
-  const list = document.getElementById("keyPoints");
-  list.innerHTML = "";
-
-  sorted.forEach(word => {
-    const li = document.createElement("li");
-    li.textContent = word.charAt(0).toUpperCase() + word.slice(1);
-    list.appendChild(li);
-  });
-}
-
-/* ========================
-   CLEAN STATEMENT FLASHCARDS
-======================== */
-function generateFlashcards(text, title) {
-  const sentences = text
-    .split(". ")
-    .filter(s => s.length > 50)
-    .slice(0,6);
-
-  const container = document.getElementById("flashcards");
-  container.innerHTML = "";
-
-  sentences.forEach(sentence => {
-    const card = document.createElement("div");
-    card.className = "flashcard";
-
-    card.innerHTML = `
-      <strong>${title}:</strong><br>
-      ${sentence.trim()}.
-    `;
-
-    container.appendChild(card);
-  });
 }
