@@ -7,47 +7,41 @@
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand">BrainBoost Ultra</div>
-  <div class="signature">Built by Vrishab Varun</div>
+<header>
+  <div class="logo">BrainBoost</div>
+  <div class="builder">Built by Vrishab Varun</div>
 </header>
 
 <section class="hero">
-  <h1>Study Smarter. Think Cleaner.</h1>
-  <p>Structured knowledge extraction powered by Wikipedia.</p>
-
-  <div class="search-area">
-    <input type="text" id="topicInput" placeholder="Enter a topic (e.g., Earth)">
-    <button onclick="generateContent()">Generate</button>
+  <h1>Study Smarter. Faster. Cleaner.</h1>
+  <p>Instant summaries, cheat sheets, and flashcards powered by structured knowledge.</p>
+  
+  <div class="search-box">
+    <input type="text" id="topicInput" placeholder="Enter a topic (e.g., Photosynthesis)">
+    <button onclick="generateContent()">Generate Boost</button>
   </div>
 </section>
 
-<section id="results" class="results hidden">
-
-  <div class="panel">
+<section id="results" class="hidden">
+  <div class="card">
     <h2>Summary</h2>
-    <p id="summary"></p>
+    <div id="summary"></div>
   </div>
 
-  <div class="panel">
-    <h2>Study Sections</h2>
+  <div class="card">
+    <h2>Key Concepts</h2>
     <ul id="keyPoints"></ul>
   </div>
 
-  <div class="panel">
-    <h2>Study Mode</h2>
+  <div class="card">
+    <h2>Flashcards</h2>
     <div id="flashcards"></div>
   </div>
 
-  <div class="source">
+  <div class="footer-info">
     <p id="source"></p>
   </div>
-
 </section>
-
-<footer>
-  <p>© BrainBoost Ultra — Built by Vrishab Varun</p>
-</footer>
 
 <script src="script.js"></script>
 </body>
