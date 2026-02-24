@@ -8,13 +8,12 @@ async function searchTopic(topicOverride = null) {
   document.getElementById("results").classList.remove("hidden");
 
   try {
-    // Use official Wikipedia API with CORS support
+    // OFFICIAL MediaWiki API with CORS enabled
     const response = await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(topic)}`
     );
 
     const data = await response.json();
-
     const pages = data.query.pages;
     const page = Object.values(pages)[0];
 
@@ -23,13 +22,10 @@ async function searchTopic(topicOverride = null) {
       return;
     }
 
+    // Overview
     document.getElementById("overview").innerText = page.extract;
 
-    // Clear sections for now
-    document.getElementById("sections").innerHTML =
-      "<p>Related exploration coming soon.</p>";
-
-    // Simple related search using search API
+    // Related topics (search API)
     const relatedResponse = await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=8`
     );
@@ -44,6 +40,10 @@ async function searchTopic(topicOverride = null) {
       btn.onclick = () => searchTopic(result.title);
       relatedDiv.appendChild(btn);
     });
+
+    // Simple message for sections
+    document.getElementById("sections").innerHTML =
+      "<p>Explore related topics to navigate deeper.</p>";
 
   } catch (error) {
     alert("Error loading topic.");
