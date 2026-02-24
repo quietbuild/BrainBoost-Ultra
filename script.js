@@ -2,32 +2,44 @@ async function generateContent() {
   const topic = document.getElementById("topicInput").value.trim();
   if (!topic) return alert("Enter a topic.");
 
-  const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`);
+  const response = await fetch(
+    `https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(topic)}`
+  );
+
   const data = await response.json();
 
-  if (!data.extract) {
+  if (!data.lead || !data.lead.sections) {
     alert("Topic not found.");
     return;
   }
 
   document.getElementById("results").classList.remove("hidden");
 
-  const cleanText = data.extract.replace(/\[[^\]]*\]/g, "");
-  generateSummary(cleanText);
-  generateKeyPoints(cleanText);
-  generateFlashcards(cleanText, topic);
+  // Combine full article intro text
+  let fullText = "";
+  data.lead.sections.forEach(section => {
+    fullText += section.text + " ";
+  });
+
+  // Remove HTML tags
+  fullText = fullText.replace(/<[^>]+>/g, "");
+  fullText = fullText.replace(/\[[^\]]*\]/g, "");
+
+  generateSummary(fullText);
+  generateKeyPoints(fullText);
+  generateFlashcards(fullText, topic);
 
   document.getElementById("source").innerHTML =
-    `Source: <a href="${data.content_urls.desktop.page}" target="_blank">Wikipedia</a>`;
+    `Source: <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}" target="_blank">Wikipedia</a>`;
 }
 
 /* ========================
    SMART SUMMARY
 ======================== */
 function generateSummary(text) {
-  const sentences = text.split(". ");
-  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","almost","most","also","only"];
-  
+  const sentences = text.split(". ").filter(s => s.length > 40);
+  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","also","only"];
+
   const wordFreq = {};
   text.toLowerCase().split(/\W+/).forEach(word => {
     if (word.length > 4 && !stopwords.includes(word)) {
@@ -44,18 +56,18 @@ function generateSummary(text) {
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const best = scored.slice(0, 3).map(s => s.sentence.trim()).join(". ");
 
+  const best = scored.slice(0, 4).map(s => s.sentence.trim()).join(". ");
   document.getElementById("summary").innerText = best + ".";
 }
 
 /* ========================
-   SMART KEY CONCEPTS
+   BETTER KEY CONCEPTS
 ======================== */
 function generateKeyPoints(text) {
-  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","almost","most","also","only"];
-  
-  const words = text.toLowerCase().match(/\b[a-z]{5,}\b/g) || [];
+  const stopwords = ["the","this","that","with","from","have","were","been","into","about","which","their","there","also","only"];
+
+  const words = text.toLowerCase().match(/\b[a-z]{6,}\b/g) || [];
   const freq = {};
 
   words.forEach(word => {
@@ -66,7 +78,7 @@ function generateKeyPoints(text) {
 
   const sorted = Object.entries(freq)
     .sort((a,b) => b[1] - a[1])
-    .slice(0,8)
+    .slice(0,10)
     .map(entry => entry[0]);
 
   const list = document.getElementById("keyPoints");
@@ -80,13 +92,13 @@ function generateKeyPoints(text) {
 }
 
 /* ========================
-   QUIZ MODE FLASHCARDS
+   SMARTER FLASHCARDS
 ======================== */
 let flashcards = [];
 let currentCard = 0;
 
 function generateFlashcards(text, topic) {
-  const sentences = text.split(". ").slice(0,6);
+  const sentences = text.split(". ").filter(s => s.length > 40).slice(0,8);
 
   flashcards = sentences.map(sentence => {
     sentence = sentence.trim();
@@ -103,6 +115,13 @@ function generateFlashcards(text, topic) {
       const subject = sentence.split(" was ")[0];
       return {
         question: `What happened to ${subject}?`,
+        answer: sentence
+      };
+    }
+
+    if (sentence.includes(" in ")) {
+      return {
+        question: `Where does this occur in ${topic}?`,
         answer: sentence
       };
     }
