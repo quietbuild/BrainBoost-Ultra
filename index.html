@@ -6,94 +6,117 @@
 <title>BrainBoost X</title>
 
 <style>
-body {
+
+body{
   margin:0;
-  background:#0b0f14;
-  color:#e8edf2;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:#fff;
+  background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #1a1a2e);
+  background-size: 400% 400%;
+  animation: gradientMove 12s ease infinite;
+  min-height:100vh;
 }
 
-header {
+@keyframes gradientMove{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+header{
   text-align:center;
-  padding:50px 20px;
+  padding:70px 20px 40px;
 }
 
-header h1 {
-  font-size:38px;
+header h1{
+  font-size:44px;
   margin:0;
+  letter-spacing:1px;
+  text-shadow:0 0 25px rgba(255,255,255,0.35);
 }
 
-header p {
-  opacity:0.6;
-  margin-top:8px;
+header p{
+  opacity:0.8;
+  margin-top:12px;
+  font-size:18px;
 }
 
-.container {
+.container{
   max-width:900px;
   margin:auto;
   padding:20px;
 }
 
-.search-box {
+.search-box{
   display:flex;
-  gap:10px;
+  gap:12px;
   flex-wrap:wrap;
+  backdrop-filter:blur(18px);
+  background:rgba(255,255,255,0.08);
+  padding:22px;
+  border-radius:22px;
+  box-shadow:0 25px 70px rgba(0,0,0,0.6);
 }
 
-input {
+input{
   flex:1;
   min-width:200px;
-  padding:14px;
-  border-radius:10px;
+  padding:15px;
+  border-radius:14px;
   border:none;
   font-size:16px;
-  background:#11161c;
+  background:rgba(0,0,0,0.45);
   color:white;
 }
 
-button {
-  padding:14px 20px;
+input:focus{
+  outline:none;
+  box-shadow:0 0 15px rgba(31,111,235,0.6);
+}
+
+button{
+  padding:15px 22px;
   border:none;
-  border-radius:10px;
-  background:#1f6feb;
+  border-radius:14px;
+  background:linear-gradient(135deg,#1f6feb,#3a8bfd);
   color:white;
-  font-weight:500;
+  font-weight:600;
   cursor:pointer;
+  transition:0.3s;
 }
 
-button:hover {
-  background:#2f81f7;
+button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 25px rgba(31,111,235,0.6);
 }
 
-.card {
-  margin-top:30px;
-  background:#11161c;
-  padding:25px;
-  border-radius:16px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.4);
+.card{
+  margin-top:40px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(18px);
+  padding:30px;
+  border-radius:24px;
+  box-shadow:0 25px 70px rgba(0,0,0,0.6);
 }
 
-#image img {
+#image img{
   width:100%;
-  border-radius:12px;
-  margin:15px 0;
+  border-radius:18px;
+  margin:20px 0;
 }
 
-.suggestions button {
-  margin:5px 5px 0 0;
-  background:#1c222a;
+.suggestions button{
+  margin:6px 6px 0 0;
+  background:rgba(0,0,0,0.45);
 }
 
-.suggestions button:hover {
-  background:#2a313a;
-}
-
-footer {
+footer{
   text-align:center;
-  padding:50px 20px;
-  opacity:0.5;
+  padding:70px 20px;
+  opacity:0.7;
   font-size:14px;
 }
+
 </style>
 </head>
 
@@ -126,12 +149,11 @@ footer {
 <footer>
 BrainBoost X<br>
 Engineered by Vrishab Varun<br>
-© 2026
+© 2026 All Rights Reserved
 </footer>
 
 <script>
 
-// Enter key search
 document.getElementById("topicInput").addEventListener("keydown", function(e){
   if(e.key==="Enter"){
     searchTopic();
@@ -140,8 +162,8 @@ document.getElementById("topicInput").addEventListener("keydown", function(e){
 
 async function searchTopic(topicOverride=null){
 
-  const inputField = document.getElementById("topicInput");
-  const input = topicOverride || inputField.value.trim();
+  const inputField=document.getElementById("topicInput");
+  const input=topicOverride || inputField.value.trim();
   if(!input) return;
 
   document.getElementById("results").style.display="block";
@@ -152,31 +174,35 @@ async function searchTopic(topicOverride=null){
 
   try{
 
-    let searchRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(input)}&srlimit=5`
+    const searchRes=await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(input)}&srlimit=5&srinfo=suggestion`
     );
 
-    let searchData = await searchRes.json();
+    const searchData=await searchRes.json();
+
+    if(searchData.query.searchinfo && searchData.query.searchinfo.suggestion){
+      return searchTopic(searchData.query.searchinfo.suggestion);
+    }
 
     if(!searchData.query.search.length){
       document.getElementById("title").innerText="No Results Found";
-      document.getElementById("overview").innerText="Try a different search.";
+      document.getElementById("overview").innerText="Try another spelling.";
       return;
     }
 
-    const bestMatch = searchData.query.search[0].title;
+    const bestMatch=searchData.query.search[0].title;
 
-    const summaryRes = await fetch(
+    const summaryRes=await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestMatch)}`
     );
 
-    const summaryData = await summaryRes.json();
+    const summaryData=await summaryRes.json();
 
-    document.getElementById("title").innerText = summaryData.title;
-    document.getElementById("overview").innerText = summaryData.extract;
+    document.getElementById("title").innerText=summaryData.title;
+    document.getElementById("overview").innerText=summaryData.extract;
 
     if(summaryData.thumbnail){
-      document.getElementById("image").innerHTML =
+      document.getElementById("image").innerHTML=
         `<img src="${summaryData.thumbnail.source}" alt="${summaryData.title}">`;
     }
 
