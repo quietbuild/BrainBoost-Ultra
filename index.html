@@ -9,12 +9,21 @@
 <meta name="theme-color" content="#000000">
 
 <style>
+
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   color:#fff;
-  background:linear-gradient(135deg,#111,#1f1f1f,#000);
   min-height:100vh;
+  background: linear-gradient(-45deg,#ff0066,#6a00ff,#00c3ff,#00ff88,#ffcc00);
+  background-size:400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
 }
 
 header{
@@ -37,7 +46,8 @@ header h1{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  background:#111;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(15px);
   padding:20px;
   border-radius:20px;
 }
@@ -60,14 +70,20 @@ button{
 
 .card{
   margin-top:30px;
-  background:#111;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(15px);
   padding:25px;
   border-radius:20px;
 }
 
+#image img{
+  width:100%;
+  border-radius:15px;
+  margin:15px 0;
+}
+
 #overview{
   line-height:1.6;
-  margin-top:15px;
 }
 
 .hidden{
@@ -129,6 +145,7 @@ async function searchTopic(topicOverride=null){
 
   try{
 
+    // Search best match
     const searchRes=await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(input)}&srlimit=1`
     );
@@ -141,16 +158,26 @@ async function searchTopic(topicOverride=null){
 
     const bestMatch=searchData.query.search[0].title;
 
+    // Get full text
     const pageRes=await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&explaintext=true&titles=${encodeURIComponent(bestMatch)}`
     );
-
     const pageData=await pageRes.json();
     const page=Object.values(pageData.query.pages)[0];
-
     fullText=page.extract;
 
+    // Get image
+    const summaryRes=await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestMatch)}`
+    );
+    const summaryData=await summaryRes.json();
+
     document.getElementById("title").innerText=bestMatch;
+
+    if(summaryData.thumbnail){
+      document.getElementById("image").innerHTML=
+        `<img src="${summaryData.thumbnail.source}">`;
+    }
 
     if(fullText.length>800){
       document.getElementById("overview").innerText=fullText.substring(0,800)+"...";
