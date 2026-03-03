@@ -5,13 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BrainBoost Explorer</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
 <style>
+
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:#0f172a;
-  color:white;
+  color:#fff;
   min-height:100vh;
+  background: linear-gradient(-45deg,#ff0066,#6a00ff,#00c3ff,#00ff88,#ffcc00);
+  background-size:400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
 }
 
 header{
@@ -20,8 +32,8 @@ header{
 }
 
 header h1{
+  font-size:40px;
   margin:0;
-  font-size:38px;
 }
 
 .container{
@@ -34,9 +46,10 @@ header h1{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  background:#1e293b;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(15px);
   padding:20px;
-  border-radius:16px;
+  border-radius:20px;
 }
 
 input{
@@ -45,35 +58,36 @@ input{
   border-radius:10px;
   border:none;
   font-size:16px;
-  background:#334155;
-  color:white;
 }
 
 button{
-  padding:12px 18px;
+  padding:14px 20px;
   border:none;
   border-radius:10px;
   font-weight:600;
   cursor:pointer;
-  background:#3b82f6;
-  color:white;
-}
-
-button:hover{
-  background:#2563eb;
 }
 
 .card{
   margin-top:30px;
-  background:#1e293b;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(15px);
   padding:25px;
-  border-radius:16px;
+  border-radius:20px;
 }
 
 #image img{
   width:100%;
-  border-radius:12px;
+  border-radius:15px;
   margin:15px 0;
+}
+
+#overview{
+  line-height:1.6;
+}
+
+.hidden{
+  display:none;
 }
 
 </style>
@@ -94,19 +108,28 @@ button:hover{
     <button onclick="randomTopic()">Random</button>
   </div>
 
-  <div id="results" class="card" style="display:none;">
+  <div id="results" class="card hidden">
     <h2 id="title"></h2>
     <div id="image"></div>
-    <p id="overview"></p>
+    <div id="overview"></div>
+    <button id="toggleBtn" onclick="toggleText()" class="hidden">Show More</button>
+    <button onclick="copyText()">Copy Summary</button>
   </div>
 
 </div>
 
 <script>
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
 document.getElementById("topicInput").addEventListener("keydown", function(e){
   if(e.key==="Enter"){ searchTopic(); }
 });
+
+let fullText="";
+let collapsed=true;
 
 async function searchTopic(topicOverride=null){
 
@@ -114,13 +137,15 @@ async function searchTopic(topicOverride=null){
   const input=topicOverride || inputField.value.trim();
   if(!input) return;
 
-  document.getElementById("results").style.display="block";
+  document.getElementById("results").classList.remove("hidden");
   document.getElementById("title").innerText="Searching...";
   document.getElementById("overview").innerText="";
   document.getElementById("image").innerHTML="";
+  document.getElementById("toggleBtn").classList.add("hidden");
 
   try{
 
+    // Search best match
     const searchRes=await fetch(
       `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=${encodeURIComponent(input)}&srlimit=1`
     );
@@ -133,22 +158,55 @@ async function searchTopic(topicOverride=null){
 
     const bestMatch=searchData.query.search[0].title;
 
+    // Get full text
+    const pageRes=await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&explaintext=true&titles=${encodeURIComponent(bestMatch)}`
+    );
+    const pageData=await pageRes.json();
+    const page=Object.values(pageData.query.pages)[0];
+    fullText=page.extract;
+
+    // Get image
     const summaryRes=await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestMatch)}`
     );
     const summaryData=await summaryRes.json();
 
-    document.getElementById("title").innerText=summaryData.title;
-    document.getElementById("overview").innerText=summaryData.extract;
+    document.getElementById("title").innerText=bestMatch;
 
     if(summaryData.thumbnail){
       document.getElementById("image").innerHTML=
         `<img src="${summaryData.thumbnail.source}">`;
     }
 
+    if(fullText.length>800){
+      document.getElementById("overview").innerText=fullText.substring(0,800)+"...";
+      document.getElementById("toggleBtn").classList.remove("hidden");
+      collapsed=true;
+    }else{
+      document.getElementById("overview").innerText=fullText;
+    }
+
   }catch(error){
     document.getElementById("title").innerText="Connection Error";
   }
+}
+
+function toggleText(){
+  if(collapsed){
+    document.getElementById("overview").innerText=fullText;
+    document.getElementById("toggleBtn").innerText="Show Less";
+    collapsed=false;
+  }else{
+    document.getElementById("overview").innerText=fullText.substring(0,800)+"...";
+    document.getElementById("toggleBtn").innerText="Show More";
+    collapsed=true;
+  }
+}
+
+function copyText(){
+  navigator.clipboard.writeText(fullText);
+  alert("Copied to clipboard");
 }
 
 function randomTopic(){
